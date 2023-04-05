@@ -1,0 +1,2 @@
+templates:
+  test/invalid_template.tmpl: '{{ eq .type "end" }}'

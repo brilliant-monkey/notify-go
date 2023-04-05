@@ -1,0 +1,2 @@
+templates:
+  test/valid_template.tmpl: '{{ and (eq .Type "end") (contains .After.EnteredZones "property") }}'

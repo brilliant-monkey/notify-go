@@ -1,0 +1,2 @@
+templates:
+  test/missing.tmpl: '{{ eq .type "end" }}'

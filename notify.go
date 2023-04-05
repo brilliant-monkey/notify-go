@@ -1,10 +1,7 @@
 package notify
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"text/template"
 
 	"github.com/brilliant-monkey/notify-go/config"
@@ -23,11 +20,11 @@ func contains(arr []string, value string) bool {
 func NewNotifier(config *config.NotifierConfig) (*Notifier, error) {
 	templates, err := buildTemplates(config)
 	if err != nil {
-		log.Fatalln("Could not build templates:", err)
+		return nil, fmt.Errorf("Could not build templates: %s", err)
 	}
 	err = validateTemplates(templates)
 	if err != nil {
-		log.Fatalln("Templates are invalid:", err)
+		return nil, fmt.Errorf("Template validation failed: %s", err)
 	}
 
 	return &Notifier{
@@ -42,64 +39,31 @@ func buildTemplates(config *config.NotifierConfig) (templates map[string]*templa
 	}
 
 	for key, value := range config.Templates {
+		templates = map[string]*template.Template{}
 		template, err := template.New(key).Funcs(funcs).Parse(value)
 		if err != nil {
 			return nil, err
 		}
-
 		templates[key] = template
-	}
-	return
-}
-
-func readTemplate(name string) (t *template.Template, err error) {
-	bytes, err := ioutil.ReadFile(name)
-	if err != nil {
-		return
-	}
-
-	t, err = template.New(name).Parse(string(bytes))
-	if err != nil {
-		return
 	}
 	return
 }
 
 func validateTemplates(templates map[string]*template.Template) (err error) {
 	for key, _ := range templates {
-		_, err = readTemplate(key)
+		_, err = loadTemplate(key)
 	}
 	return
 }
 
-func (notifier *Notifier) testTemplate(name string, object interface{}) bool {
-	_, err := runTemplate(notifier.templates[name], object)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func runTemplate(template *template.Template, object interface{}) (result []byte, err error) {
-	buf := bytes.Buffer{}
-	err = template.Execute(&buf, object)
-	if err != nil {
-		return
-	}
-	return buf.Bytes(), nil
-}
-
 func (notifier *Notifier) RunTemplate(object interface{}) (output []byte, err error) {
-	for key := range notifier.templates {
-		isMatch := notifier.testTemplate(key, object)
-		if isMatch {
-			template, err := readTemplate(key)
-			result, err := runTemplate(template, object)
+	for key, value := range notifier.templates {
+		if testTemplate(value, object) {
+			template, err := loadTemplate(key)
 			if err != nil {
-				log.Println("Error occured reading template: ")
-				break
+				return nil, err
 			}
-			return result, nil
+			return runTemplate(template, object)
 		}
 	}
 	return nil, fmt.Errorf("No matching templates for execution.")
