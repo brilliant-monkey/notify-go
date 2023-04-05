@@ -7,23 +7,20 @@ import (
 	"log"
 	"text/template"
 
+	"github.com/brilliant-monkey/notify-go/config"
 	"golang.org/x/exp/slices"
 )
 
 type Notifier struct {
-	config    *NotifierConfig
+	config    *config.NotifierConfig
 	templates map[string]*template.Template
-}
-
-type NotifierConfig struct {
-	Templates map[string]string `yaml:"templates"`
 }
 
 func contains(arr []string, value string) bool {
 	return slices.Contains(arr, value)
 }
 
-func NewNotifier(config *NotifierConfig) (*Notifier, error) {
+func NewNotifier(config *config.NotifierConfig) (*Notifier, error) {
 	templates, err := buildTemplates(config)
 	if err != nil {
 		log.Fatalln("Could not build templates:", err)
@@ -39,7 +36,7 @@ func NewNotifier(config *NotifierConfig) (*Notifier, error) {
 	}, nil
 }
 
-func buildTemplates(config *NotifierConfig) (templates map[string]*template.Template, err error) {
+func buildTemplates(config *config.NotifierConfig) (templates map[string]*template.Template, err error) {
 	funcs := map[string]any{
 		"contains": contains,
 	}
